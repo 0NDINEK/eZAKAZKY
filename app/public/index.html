@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Evidence zakázek</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo"><svg class="ic" data-i="assignment"></svg></span>
+      <span class="brand-name">Evidence zakázek</span>
+    </div>
+    <label class="search">
+      <svg class="ic" data-i="search"></svg>
+      <input id="search" type="search" placeholder="Hledat zakázku, odběratele, lokalitu, fakturu, poznámku…" autocomplete="off" aria-label="Hledat">
+      <kbd>Ctrl&nbsp;F</kbd>
+    </label>
+    <div class="top-actions">
+      <span class="status" id="status" title="Stav spojení s databází"><i></i><span>Připojování…</span></span>
+      <a class="btn ghost" href="/api/export.csv" download title="Export do CSV (otevře se v Excelu)"><svg class="ic" data-i="export"></svg><span class="hide-sm">Export</span></a>
+      <button class="btn primary" id="btn-new" title="Ctrl+N"><svg class="ic" data-i="add"></svg>Nová zakázka</button>
+      <button class="btn primary" id="btn-update" hidden></button>
+      <button class="icon-btn" id="btn-update-check" hidden></button>
+      <button class="icon-btn" id="btn-theme" hidden></button>
+      <span class="user" id="user" title="Přihlášený uživatel"><b class="avatar"></b><span></span></span>
+    </div>
+  </header>
+
+  <main class="page" id="page">
+    <section class="kpis" id="kpis" aria-label="Přehled"></section>
+
+    <section class="card">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Roky"></div>
+      <div class="toolbar">
+        <div class="segmented" id="seg" role="tablist" aria-label="Zobrazení"></div>
+        <button class="btn ghost small" id="btn-hide-year" hidden title="Rok se schová ze seznamu, nic se nesmaže"><svg class="ic" data-i="hide"></svg><span></span></button>
+      </div>
+      <div class="hidden-banner" id="hidden-banner" hidden></div>
+
+      <div class="table-wrap">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="number">Zakázka <svg class="ic sort" data-i="down"></svg></th>
+              <th class="sortable" data-sort="customer">Odběratel <svg class="ic sort" data-i="down"></svg></th>
+              <th class="sortable" data-sort="location">Lokalita <svg class="ic sort" data-i="down"></svg></th>
+              <th>Faktury</th>
+              <th class="sortable" data-sort="date">Datum zaevidování <svg class="ic sort" data-i="down"></svg></th>
+              <th class="col-notes" title="Poznámky"><svg class="ic" data-i="note"></svg></th>
+              <th class="col-actions"><span class="sr">Akce</span></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty" hidden></div>
+      </div>
+
+      <footer class="pager">
+        <div id="summary"></div>
+        <div class="pager-right">
+          <label>Řádků na stránku
+            <select id="page-size"><option>10</option><option selected>15</option><option>25</option><option>50</option><option>100</option></select>
+          </label>
+          <div class="pages" id="pages"></div>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <!-- Detail zakázky -->
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Detail zakázky">
+    <header class="drawer-head">
+      <div class="head-title">
+        <span class="eyebrow">Zakázka</span>
+        <h2 id="d-number"></h2>
+      </div>
+      <div class="head-actions">
+        <button class="icon-btn" id="d-edit" title="Upravit údaje zakázky" aria-label="Upravit zakázku"><svg class="ic" data-i="edit"></svg></button>
+        <button class="icon-btn danger" id="d-delete" title="Smazat zakázku" aria-label="Smazat zakázku"><svg class="ic" data-i="delete"></svg></button>
+        <button class="icon-btn" id="d-close" title="Zavřít (Esc)" aria-label="Zavřít detail"><svg class="ic" data-i="close"></svg></button>
+      </div>
+    </header>
+
+    <div class="drawer-body">
+      <dl class="meta">
+        <div><dt>Odběratel</dt><dd id="d-customer"></dd></div>
+        <div><dt>Lokalita</dt><dd id="d-location"></dd></div>
+      </dl>
+
+      <section class="block">
+        <div class="block-head">
+          <h3>Faktury <span class="count" id="d-inv-count"></span></h3>
+          <button class="btn ghost small" id="d-add-invoice"><svg class="ic" data-i="add"></svg>Přidat fakturu</button>
+        </div>
+        <ul class="inv-list" id="d-invoices"></ul>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><h3>Poznámky <span class="count" id="d-note-count"></span></h3></div>
+        <div class="composer">
+          <textarea id="d-note-input" rows="3" maxlength="5000" placeholder="Napište poznámku k zakázce…" aria-label="Nová poznámka"></textarea>
+          <div class="composer-row">
+            <small>Ctrl+Enter odešle</small>
+            <button class="btn primary small" id="d-note-add" disabled>Přidat poznámku</button>
+          </div>
+        </div>
+        <ul class="notes" id="d-notes"></ul>
+      </section>
+    </div>
+
+    <footer class="drawer-foot" id="d-foot"></footer>
+  </aside>
+
+  <!-- Zakázka -->
+  <dialog id="dlg-order">
+    <form method="dialog" id="form-order" novalidate>
+      <h2 id="order-title">Nová zakázka</h2>
+      <label>Číslo zakázky <small>formát xx/rrrr</small>
+        <input id="o-number" inputmode="numeric" placeholder="05/2026" maxlength="9" autocomplete="off">
+      </label>
+      <label>Odběratel
+        <input id="o-customer" list="dl-customers" maxlength="200" autocomplete="off">
+      </label>
+      <label>Lokalita <small>město / ulice / katastrální území</small>
+        <input id="o-location" list="dl-locations" maxlength="200" autocomplete="off">
+      </label>
+      <datalist id="dl-customers"></datalist><datalist id="dl-locations"></datalist>
+      <p class="error" id="o-error" role="alert" hidden></p>
+      <div class="actions">
+        <button type="button" class="btn ghost" data-close>Zrušit</button>
+        <button type="submit" class="btn primary">Uložit</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Faktura -->
+  <dialog id="dlg-invoice">
+    <form method="dialog" id="form-invoice" novalidate>
+      <h2 id="inv-title">Nová faktura</h2>
+      <p class="ctx" id="inv-ctx"></p>
+      <label>Číslo faktury <small>Fx/rrrr – x zadáte ručně</small>
+        <span class="inv-row">
+          <span class="prefix">F</span>
+          <input id="i-seq" inputmode="numeric" maxlength="6" placeholder="12" autocomplete="off" aria-label="Pořadové číslo faktury">
+          <span class="slash">/</span>
+          <input id="i-year" inputmode="numeric" maxlength="4" placeholder="2026" autocomplete="off" aria-label="Rok">
+        </span>
+      </label>
+      <label>Datum zaevidování <small>volitelné</small>
+        <input id="i-date" type="date">
+      </label>
+      <p class="error" id="i-error" role="alert" hidden></p>
+      <div class="actions">
+        <button type="button" class="btn danger-ghost" id="i-delete" hidden>Smazat fakturu</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" data-close>Zrušit</button>
+        <button type="submit" class="btn primary">Uložit</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Potvrzení -->
+  <dialog id="dlg-confirm">
+    <form method="dialog">
+      <h2 id="c-title">Opravdu?</h2>
+      <p id="c-text"></p>
+      <div class="actions">
+        <button type="button" class="btn ghost" data-close>Zrušit</button>
+        <button type="submit" class="btn danger" id="c-ok">Smazat</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Jméno (jen při provozu přes síť) -->
+  <dialog id="dlg-name">
+    <form method="dialog" id="form-name">
+      <h2>Kdo pracuje?</h2>
+      <p>Jméno se zapisuje do historie změn a poznámek.</p>
+      <label>Vaše jméno <input id="n-name" maxlength="60" autocomplete="off"></label>
+      <div class="actions"><span class="spacer"></span><button type="submit" class="btn primary">Pokračovat</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

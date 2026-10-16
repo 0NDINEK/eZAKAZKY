@@ -1,0 +1,17 @@
+# data zákazníků – nikdy do gitu
+data/
+backup/
+*.db
+*.db-*
+config.json
+!app/config.json
+
+# sestavení a závislosti
+node_modules/
+dist/
+dist-setup/
+
+# nástroje
+.claude/
+tmp/
+*.log

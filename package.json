@@ -1,0 +1,70 @@
+{
+  "name": "evidence-zakazek",
+  "productName": "Evidence zakázek",
+  "version": "0.4.0",
+  "description": "Evidence zakázek a faktur – aplikace pro Windows se sdílenou databází",
+  "author": "Ondřej Frolík",
+  "main": "app/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "demo": "electron . --demo",
+    "server": "node app/server.js",
+    "build": "node scripts/build.js",
+    "setup": "node scripts/build.js && electron-builder --prepackaged \"dist/Evidence zakazek-win32-x64\" --win nsis --x64 --publish never",
+    "release": "node scripts/release.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.8.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "cz.evidence.zakazek",
+    "productName": "Evidence zakázek",
+    "executableName": "Evidence zakazek",
+    "copyright": "© Ondřej Frolík",
+    "directories": {
+      "output": "dist-setup",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Evidence zakázek",
+      "language": "1029",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Evidence-zakazek-Setup-${version}.exe"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "0NDINEK",
+        "repo": "eZAKAZKY"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0NDINEK/eZAKAZKY.git"
+  }
+}
